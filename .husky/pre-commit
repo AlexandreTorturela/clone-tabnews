@@ -1,0 +1,108 @@
+#!/usr/bin/env sh
+
+ENTROPY_PROG="./entropy/file-normalized-entropy"
+THRESHOLD="0.80"
+
+if [ ! -x "$ENTROPY_PROG" ]; then
+  echo "❌ file-normalized-entropy não encontrado ou não executável" >&2
+  exit 1
+fi
+
+should_ignore_file() {
+  case "$1" in
+    # -----------------------------
+    # Mídia e binários óbvios
+    # -----------------------------
+    *.png|*.jpg|*.jpeg|*.gif|*.bmp|*.webp|*.ico)
+      return 0 ;;
+    *.pdf|*.zip|*.gz|*.tgz|*.bz2|*.7z|*.rar)
+      return 0 ;;
+    *.mp3|*.mp4|*.avi|*.mkv|*.mov|*.wav)
+      return 0 ;;
+    *.exe|*.dll|*.so|*.dylib)
+      return 0 ;;
+
+    # -----------------------------
+    # Código gerado / minificado
+    # -----------------------------
+    *.min.js|*.min.css|*.map|*.wasm)
+      return 0 ;;
+
+    # -----------------------------
+    # Lockfiles e manifests grandes
+    # -----------------------------
+    package-lock.json|yarn.lock|pnpm-lock.yaml)
+      return 0 ;;
+    package.json)
+      return 0 ;;
+
+    # -----------------------------
+    # Dependências e artefatos de build
+    # -----------------------------
+    */node_modules/*|*/dist/*|*/build/*|*/out/*|*/target/*|*/vendor/*)
+      return 0 ;;
+
+    # -----------------------------
+    # Hooks e ferramentas do projeto
+    # -----------------------------
+    .husky/*)
+      return 0 ;;
+    entropy/*)
+      return 0 ;;
+  esac
+
+  return 1
+}
+
+violated=0
+
+# Cabeçalho da tabela (stderr)
+{
+  printf "\n%-40s %18s  %-8s\n" "FILE" "NORMALIZED ENTROPY" "STATUS"
+  printf "%-40s %18s  %-8s\n" \
+    "----------------------------------------" "------------------" "--------"
+} >&2
+
+git diff --cached --name-only --diff-filter=ACM |
+while IFS= read -r file; do
+
+  [ -z "$file" ] && continue
+
+  if ! git show ":$file" >/dev/null 2>&1; then
+    continue
+  fi
+
+  if should_ignore_file "$file"; then
+    continue
+  fi
+
+  score=$(git show ":$file" | \
+    "$ENTROPY_PROG" --verbose /dev/stdin | awk '{print $NF}')
+
+  [ -z "$score" ] && continue
+
+  # Verifica threshold (float-safe)
+  awk -v s="$score" -v t="$THRESHOLD" 'BEGIN { exit !(s >= t) }'
+  if [ $? -eq 0 ]; then
+    status="WARNING"
+    violated=1
+  else
+    status=""
+  fi
+
+  printf "%-40s %18.6f  %-8s\n" "$file" "$score" "$status" >&2
+
+done
+
+if [ $violated -eq 1 ]; then
+  {
+    echo
+    echo "Commit blocked due to files marked as WARNING."
+    echo "If this is intentional, use:"
+    echo "  git commit --no-verify"
+    echo
+  } >&2
+  exit 1
+fi
+
+exit 0
