@@ -50,7 +50,7 @@ async function create(userInputValues) {
     }
   }
 
-  async function runInsertQuery(unserInputValues) {
+  async function runInsertQuery(userInputValues) {
     const results = await database.query({
       text: `
         INSERT INTO
