@@ -1,6 +1,9 @@
 import retry from 'async-retry';
+import { faker } from '@faker-js/faker/.';
 import database from 'infra/database.js';
 import migrator from 'models/migrator.js';
+//import password from 'models/password';
+import user from 'models/user.js';
 
 async function waitForAllServices() {
   await waitForWebServer();
@@ -16,10 +19,6 @@ async function waitForAllServices() {
       if (response.status != 200) {
         throw Error();
       }
-      //await response.json();
-      //const responseBody = response.json();
-      //console.log('endpoint api/v1/status: response.status=' + response.status);
-      //console.log('endpoint api/v1/status: response.json=' + responseBody.response);
     }
   }
 }
@@ -32,10 +31,25 @@ async function runPendingMigrations() {
   await migrator.runPendingMigrations();
 }
 
+async function createUser(userObject) {
+  return await user.create({
+    username:
+      userObject.username ||
+      faker.internet
+        .username()
+        .replace('_', '')
+        .replace('.', '')
+        .replace('-', ''),
+    email: userObject.email || faker.internet.email(),
+    password: userObject.password || 'validpassword',
+  });
+}
+
 const orchestrator = {
   waitForAllServices,
   clearDatabase,
   runPendingMigrations,
+  createUser,
 };
 
 export default orchestrator;
