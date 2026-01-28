@@ -5,8 +5,19 @@ import session from 'models/session.js';
 
 const router = createRouter();
 
-router.post(postHandler);
+//router.use(testeDeLog); //middleware entre o mundo exterior e os handlers
+router.use(controller.injectAnonymousOrUser);
+router.post(controller.canRequest('create:session'), postHandler);
 router.delete(deleteHandler);
+
+// function testeDeLog(request, response, next) {
+//   console.log('\n');
+//   console.log('Hora: ', new Date().toISOString());
+//   console.log('Path: ', request.method, request.url);
+//   console.log('\n');
+
+//   return next(); //executa os handlers
+// }
 
 export default router.handler(controller.errorHandlers);
 
