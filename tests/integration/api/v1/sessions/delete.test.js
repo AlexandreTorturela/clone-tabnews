@@ -37,7 +37,7 @@ describe('DELETE /api/v1/sessions', () => {
         now: new Date(Date.now() - session.EXPIRATION_IN_MILLISECONDS),
       });
 
-      const createdUser = await orchestrator.createUser({});
+      const createdUser = await orchestrator.createUser();
 
       const sessionObject = await orchestrator.createSession(createdUser.id);
 
@@ -62,7 +62,7 @@ describe('DELETE /api/v1/sessions', () => {
     });
 
     test('With valid session', async () => {
-      const createdUser = await orchestrator.createUser({});
+      const createdUser = await orchestrator.createUser();
 
       const sessionObject = await orchestrator.createSession(createdUser.id);
 
