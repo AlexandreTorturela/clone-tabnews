@@ -5,28 +5,16 @@ import authorization from 'models/authorization.js';
 import session from 'models/session.js';
 import { ForbiddenError } from 'infra/errors.js';
 
-const router = createRouter();
-
-//router.use(testeDeLog); //middleware entre o mundo exterior e os handlers
-router.use(controller.injectAnonymousOrUser);
-router.post(controller.canRequest('create:session'), postHandler);
-router.delete(deleteHandler);
-
-// function testeDeLog(request, response, next) {
-//   console.log('\n');
-//   console.log('Hora: ', new Date().toISOString());
-//   console.log('Path: ', request.method, request.url);
-//   console.log('\n');
-
-//   return next(); //executa os handlers
-// }
-
-export default router.handler(controller.errorHandlers);
+export default createRouter()
+  .use(controller.injectAnonymousOrUser)
+  .post(controller.canRequest('create:session'), postHandler)
+  .delete(deleteHandler)
+  .handler(controller.errorHandlers);
 
 async function postHandler(request, response) {
   const userInputValues = request.body;
 
-  const authenticatedUser = await authentication.getAuthenticatedUser(
+  const authenticatedUser = await authentication.getUser(
     userInputValues.email,
     userInputValues.password
   );
