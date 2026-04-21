@@ -28,7 +28,7 @@ describe('GET /api/v1/status', () => {
         await orchestrator.activateUser(privilegedUser);
       await orchestrator.addFeaturesToUser(privilegedUser, ['read:status:all']);
       const privilegedSession = await orchestrator.createSession(
-        activatedPrivilegedUser.id
+        activatedPrivilegedUser
       );
       const response = await fetch(`${webserver.origin}/api/v1/status`, {
         headers: {
